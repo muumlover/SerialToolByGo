@@ -136,12 +136,14 @@ func (mw *mwMainWindow) openSerial() {
 		log.Fatal(err)
 	}
 
-	buf := make([]byte, 128)
-	n, err = s.Read(buf)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Print("%q", buf[:n])
+	go func(s *serial.Port) {
+		buf := make([]byte, 128)
+		n, err = s.Read(buf)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Print("%q", buf[:n])
+	}(s)
 }
 
 func main() {
