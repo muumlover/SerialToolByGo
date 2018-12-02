@@ -146,111 +146,117 @@ func main() {
 	mw.scItems = getSerialConfigItems()
 	mw.sc = new(serial.Config)
 
-	partLeftTop := GroupBox{
-		Title:  "设置",
-		Layout: VBox{},
+	partLeftTop := Composite{
+		Layout: VBox{MarginsZero: true},
 		Children: []Widget{
-			Composite{
-				Layout: HBox{MarginsZero: true},
+			GroupBox{
+				Title:  "设置",
+				Layout: VBox{},
 				Children: []Widget{
-					Label{
-						Text: "端口号",
-					},
-					ComboBox{
-						AssignTo:      &mw.cbSerialPort,
-						MaxSize:       Size{Width: 100, Height: 0},
-						MinSize:       Size{Width: 100, Height: 0},
-						BindingMember: "Value",
-						DisplayMember: "Name",
-						Model:         mw.scItems.PortList,
-						Value:         Bind("Name"),
-					},
-				},
-			},
-			Composite{
-				Layout: HBox{MarginsZero: true},
-				Children: []Widget{
-					Label{
-						Text: "波特率",
-					},
-					ComboBox{
-						AssignTo:      &mw.cbBaudRate,
-						MaxSize:       Size{Width: 100, Height: 0},
-						MinSize:       Size{Width: 100, Height: 0},
-						BindingMember: "Value",
-						DisplayMember: "Name",
-						Model:         mw.scItems.BaudRate,
-						Value:         Bind("Baud"),
-					},
-				},
-			},
-			Composite{
-				Layout: HBox{MarginsZero: true},
-				Children: []Widget{
-					Label{
-						Text: "数据位",
-					},
-					ComboBox{
-						AssignTo:      &mw.cbDataBits,
-						MaxSize:       Size{Width: 100, Height: 0},
-						MinSize:       Size{Width: 100, Height: 0},
-						BindingMember: "Value",
-						DisplayMember: "Name",
-						Model:         mw.scItems.DataBits,
-						Value:         Bind("Size"),
-					},
-				},
-			},
-			Composite{
-				Layout: HBox{MarginsZero: true},
-				Children: []Widget{
-					Label{
-						Text: "停止位",
-					},
-					ComboBox{
-						AssignTo:      &mw.cbStopBits,
-						MaxSize:       Size{Width: 100, Height: 0},
-						MinSize:       Size{Width: 100, Height: 0},
-						BindingMember: "Value",
-						DisplayMember: "Name",
-						Model:         mw.scItems.StopBits,
-						Value:         Bind("StopBits"),
-					},
-				},
-			},
-			Composite{
-				Layout: HBox{MarginsZero: true},
-				Children: []Widget{
-					Label{
-						Text: "校验位",
-					},
-					ComboBox{
-						AssignTo:      &mw.cbParity,
-						MaxSize:       Size{Width: 100, Height: 0},
-						MinSize:       Size{Width: 100, Height: 0},
-						BindingMember: "Value",
-						DisplayMember: "Name",
-						Model:         mw.scItems.Parity,
-						Value:         Bind("Parity"),
-					},
-				},
-			},
-			Composite{
-				Layout: HBox{MarginsZero: true},
-				Children: []Widget{
-					PushButton{
-						Text: "打开串口",
-						OnClicked: func() {
-							if err := db.Submit(); err != nil {
-								log.Print(err)
-								return
-							}
-							mw.openSerial()
+					Composite{
+						Layout: VBox{MarginsZero: true},
+						Children: []Widget{
+							Label{
+								Text: "端口号",
+							},
+							ComboBox{
+								AssignTo:      &mw.cbSerialPort,
+								MaxSize:       Size{Width: 100, Height: 0},
+								MinSize:       Size{Width: 100, Height: 0},
+								BindingMember: "Value",
+								DisplayMember: "Name",
+								Model:         mw.scItems.PortList,
+								Value:         Bind("Name"),
+							},
 						},
 					},
-					Label{
-						Text: "OFF",
+					Composite{
+						Layout: HBox{MarginsZero: true},
+						Children: []Widget{
+							Label{
+								Text: "波特率",
+							},
+							ComboBox{
+								AssignTo:      &mw.cbBaudRate,
+								MaxSize:       Size{Width: 100, Height: 0},
+								MinSize:       Size{Width: 100, Height: 0},
+								BindingMember: "Value",
+								DisplayMember: "Name",
+								Model:         mw.scItems.BaudRate,
+								Value:         Bind("Baud"),
+							},
+						},
 					},
+					Composite{
+						Layout: HBox{MarginsZero: true},
+						Children: []Widget{
+							Label{
+								Text: "数据位",
+							},
+							ComboBox{
+								AssignTo:      &mw.cbDataBits,
+								MaxSize:       Size{Width: 100, Height: 0},
+								MinSize:       Size{Width: 100, Height: 0},
+								BindingMember: "Value",
+								DisplayMember: "Name",
+								Model:         mw.scItems.DataBits,
+								Value:         Bind("Size"),
+							},
+						},
+					},
+					Composite{
+						Layout: HBox{MarginsZero: true},
+						Children: []Widget{
+							Label{
+								Text: "停止位",
+							},
+							ComboBox{
+								AssignTo:      &mw.cbStopBits,
+								MaxSize:       Size{Width: 100, Height: 0},
+								MinSize:       Size{Width: 100, Height: 0},
+								BindingMember: "Value",
+								DisplayMember: "Name",
+								Model:         mw.scItems.StopBits,
+								Value:         Bind("StopBits"),
+							},
+						},
+					},
+					Composite{
+						Layout: HBox{MarginsZero: true},
+						Children: []Widget{
+							Label{
+								Text: "校验位",
+							},
+							ComboBox{
+								AssignTo:      &mw.cbParity,
+								MaxSize:       Size{Width: 100, Height: 0},
+								MinSize:       Size{Width: 100, Height: 0},
+								BindingMember: "Value",
+								DisplayMember: "Name",
+								Model:         mw.scItems.Parity,
+								Value:         Bind("Parity"),
+							},
+						},
+					},
+					Composite{
+						Layout: HBox{MarginsZero: true},
+						Children: []Widget{
+							PushButton{
+								Text: "打开串口",
+								OnClicked: func() {
+									if err := db.Submit(); err != nil {
+										log.Print(err)
+										return
+									}
+									mw.openSerial()
+								},
+							},
+							Label{
+								Text: "OFF",
+							},
+						},
+					},
+					//VSpacer{},
 				},
 			},
 			VSpacer{},
@@ -259,8 +265,8 @@ func main() {
 
 	partLeft := Composite{
 		Layout:  VBox{MarginsZero: true},
-		MaxSize: Size{Width: 180, Height: 10},
-		MinSize: Size{Width: 180, Height: 10},
+		MaxSize: Size{Width: 170, Height: 10},
+		MinSize: Size{Width: 170, Height: 10},
 		Children: []Widget{
 			partLeftTop,
 			VSpacer{},
