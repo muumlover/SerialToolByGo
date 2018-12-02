@@ -48,7 +48,7 @@ func getPortList() []ComboBoxItem {
 	return portList
 }
 func getBaudRate() []ComboBoxItemInt {
-	var dst = []int{1200, 2400, 4800, 9600, 115200}
+	var dst = []int{110, 300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 38400, 43000, 56000, 57600, 115200, 128000, 256000}
 	portList := make([]ComboBoxItemInt, len(dst))
 	for i, v := range dst {
 		portList[i] = ComboBoxItemInt{strconv.Itoa(v), v}
@@ -65,18 +65,18 @@ func getDataBits() []ComboBoxItemByte {
 }
 func getParity() []ComboBoxItemParity {
 	return []ComboBoxItemParity{
-		{"ParityNone", serial.ParityNone},
-		{"ParityOdd", serial.ParityOdd},
-		{"ParityEven", serial.ParityEven},
-		{"ParityMark", serial.ParityMark},
-		{"ParitySpace", serial.ParitySpace},
+		{"None", serial.ParityNone},
+		{"Odd", serial.ParityOdd},
+		{"Even", serial.ParityEven},
+		{"Mark", serial.ParityMark},
+		{"Space", serial.ParitySpace},
 	}
 }
 func getStopBits() []ComboBoxItemStopBits {
 	return []ComboBoxItemStopBits{
-		{"Stop1", serial.Stop1},
-		{"Stop1Half", serial.Stop1Half},
-		{"Stop2", serial.Stop2},
+		{"1", serial.Stop1},
+		{"1.5", serial.Stop1Half},
+		{"2", serial.Stop2},
 	}
 }
 
@@ -108,14 +108,6 @@ type mwMainWindow struct {
 
 	scItems SerialConfigItems
 	sc      *serial.Config
-}
-
-func (mw *mwMainWindow) dight() {
-	mw.cbSerialPort.SetCurrentIndex(1)
-	mw.cbBaudRate.SetCurrentIndex(1)
-	mw.cbDataBits.SetCurrentIndex(1)
-	mw.cbParity.SetCurrentIndex(1)
-	mw.cbStopBits.SetCurrentIndex(1)
 }
 
 func (mw *mwMainWindow) openSerial() {
@@ -154,27 +146,37 @@ func main() {
 	mw.scItems = getSerialConfigItems()
 	mw.sc = new(serial.Config)
 
-	partTopLeft := Composite{
-		Layout: VBox{MarginsZero: true},
+	partLeftTop := GroupBox{
+		Title:  "设置",
+		Layout: VBox{},
 		Children: []Widget{
-			Label{
-				Text: "SerialPort:",
-			},
-			ComboBox{
-				AssignTo:      &mw.cbSerialPort,
-				BindingMember: "Value",
-				DisplayMember: "Name",
-				Model:         mw.scItems.PortList,
-				Value:         Bind("Name"),
+			Composite{
+				Layout: HBox{MarginsZero: true},
+				Children: []Widget{
+					Label{
+						Text: "端口号",
+					},
+					ComboBox{
+						AssignTo:      &mw.cbSerialPort,
+						MaxSize:       Size{Width: 100, Height: 0},
+						MinSize:       Size{Width: 100, Height: 0},
+						BindingMember: "Value",
+						DisplayMember: "Name",
+						Model:         mw.scItems.PortList,
+						Value:         Bind("Name"),
+					},
+				},
 			},
 			Composite{
 				Layout: HBox{MarginsZero: true},
 				Children: []Widget{
 					Label{
-						Text: "BaudRate:",
+						Text: "波特率",
 					},
 					ComboBox{
 						AssignTo:      &mw.cbBaudRate,
+						MaxSize:       Size{Width: 100, Height: 0},
+						MinSize:       Size{Width: 100, Height: 0},
 						BindingMember: "Value",
 						DisplayMember: "Name",
 						Model:         mw.scItems.BaudRate,
@@ -186,10 +188,12 @@ func main() {
 				Layout: HBox{MarginsZero: true},
 				Children: []Widget{
 					Label{
-						Text: "DataBits:",
+						Text: "数据位",
 					},
 					ComboBox{
 						AssignTo:      &mw.cbDataBits,
+						MaxSize:       Size{Width: 100, Height: 0},
+						MinSize:       Size{Width: 100, Height: 0},
 						BindingMember: "Value",
 						DisplayMember: "Name",
 						Model:         mw.scItems.DataBits,
@@ -201,25 +205,12 @@ func main() {
 				Layout: HBox{MarginsZero: true},
 				Children: []Widget{
 					Label{
-						Text: "Parity:  ",
-					},
-					ComboBox{
-						AssignTo:      &mw.cbParity,
-						BindingMember: "Value",
-						DisplayMember: "Name",
-						Model:         mw.scItems.Parity,
-						Value:         Bind("Parity"),
-					},
-				},
-			},
-			Composite{
-				Layout: HBox{MarginsZero: true},
-				Children: []Widget{
-					Label{
-						Text: "StopBits:",
+						Text: "停止位",
 					},
 					ComboBox{
 						AssignTo:      &mw.cbStopBits,
+						MaxSize:       Size{Width: 100, Height: 0},
+						MinSize:       Size{Width: 100, Height: 0},
 						BindingMember: "Value",
 						DisplayMember: "Name",
 						Model:         mw.scItems.StopBits,
@@ -231,10 +222,24 @@ func main() {
 				Layout: HBox{MarginsZero: true},
 				Children: []Widget{
 					Label{
-						Text: "SerialOperate:",
+						Text: "校验位",
 					},
+					ComboBox{
+						AssignTo:      &mw.cbParity,
+						MaxSize:       Size{Width: 100, Height: 0},
+						MinSize:       Size{Width: 100, Height: 0},
+						BindingMember: "Value",
+						DisplayMember: "Name",
+						Model:         mw.scItems.Parity,
+						Value:         Bind("Parity"),
+					},
+				},
+			},
+			Composite{
+				Layout: HBox{MarginsZero: true},
+				Children: []Widget{
 					PushButton{
-						Text: "OpenSerial",
+						Text: "打开串口",
 						OnClicked: func() {
 							if err := db.Submit(); err != nil {
 								log.Print(err)
@@ -243,24 +248,35 @@ func main() {
 							mw.openSerial()
 						},
 					},
+					Label{
+						Text: "OFF",
+					},
 				},
 			},
 			VSpacer{},
 		},
 	}
 
-	partTop := Composite{
-		Layout: HBox{MarginsZero: true},
+	partLeft := Composite{
+		Layout:  VBox{MarginsZero: true},
+		MaxSize: Size{Width: 180, Height: 10},
+		MinSize: Size{Width: 180, Height: 10},
 		Children: []Widget{
-			partTopLeft,
-			HSpacer{},
+			partLeftTop,
+			VSpacer{},
+		},
+	}
+
+	partRight := Composite{
+		Layout: VBox{MarginsZero: true},
+		Children: []Widget{
+			TextEdit{},
+			VSpacer{},
 			TextEdit{},
 		},
 	}
 
-	partBottom := TextEdit{}
-
-	mainWindow := MainWindow{
+	if err := (MainWindow{
 		AssignTo: &mw.MainWindow,
 		//Title:    "SerialTool By Golang",
 		Title: Bind("'Animal Details' + (sc.Name == '' ? '' : ' - ' + sc.Name)"),
@@ -271,15 +287,21 @@ func main() {
 			ErrorPresenter: ToolTipErrorPresenter{},
 		},
 		MinSize: Size{Width: 600, Height: 400},
-		Layout:  VBox{},
+		Layout:  HBox{},
 		Children: []Widget{
-			partTop,
-			VSpacer{},
-			partBottom,
+			partLeft,
+			HSpacer{},
+			partRight,
 		},
+	}).Create(); err != nil {
+		log.Fatal(err)
 	}
-
-	mainWindow.Run()
+	mw.cbSerialPort.SetCurrentIndex(0)
+	mw.cbBaudRate.SetCurrentIndex(6)
+	mw.cbDataBits.SetCurrentIndex(0)
+	mw.cbParity.SetCurrentIndex(0)
+	mw.cbStopBits.SetCurrentIndex(0)
+	mw.MainWindow.Run()
 
 	/*
 		MainWindow{
