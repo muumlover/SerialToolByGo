@@ -14,22 +14,6 @@ type ComboBoxItem struct {
 	Name  string
 	Value string
 }
-type ComboBoxItemInt struct {
-	Name  string
-	Value int
-}
-type ComboBoxItemByte struct {
-	Name  string
-	Value byte
-}
-type ComboBoxItemParity struct {
-	Name  string
-	Value serial.Parity
-}
-type ComboBoxItemStopBits struct {
-	Name  string
-	Value serial.StopBits
-}
 
 func getPortList() []ComboBoxItem {
 	type Win32_PnPEntity struct {
@@ -47,6 +31,12 @@ func getPortList() []ComboBoxItem {
 	}
 	return portList
 }
+
+type ComboBoxItemInt struct {
+	Name  string
+	Value int
+}
+
 func getBaudRate() []ComboBoxItemInt {
 	var dst = []int{110, 300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 38400, 43000, 56000, 57600, 115200, 128000, 256000}
 	portList := make([]ComboBoxItemInt, len(dst))
@@ -55,6 +45,12 @@ func getBaudRate() []ComboBoxItemInt {
 	}
 	return portList
 }
+
+type ComboBoxItemByte struct {
+	Name  string
+	Value byte
+}
+
 func getDataBits() []ComboBoxItemByte {
 	var dst = []byte{8, 7, 6, 5}
 	portList := make([]ComboBoxItemByte, len(dst))
@@ -63,6 +59,12 @@ func getDataBits() []ComboBoxItemByte {
 	}
 	return portList
 }
+
+type ComboBoxItemParity struct {
+	Name  string
+	Value serial.Parity
+}
+
 func getParity() []ComboBoxItemParity {
 	return []ComboBoxItemParity{
 		{"None", serial.ParityNone},
@@ -72,6 +74,12 @@ func getParity() []ComboBoxItemParity {
 		{"Space", serial.ParitySpace},
 	}
 }
+
+type ComboBoxItemStopBits struct {
+	Name  string
+	Value serial.StopBits
+}
+
 func getStopBits() []ComboBoxItemStopBits {
 	return []ComboBoxItemStopBits{
 		{"1", serial.Stop1},
@@ -100,11 +108,13 @@ func getSerialConfigItems() SerialConfigItems {
 
 type mwMainWindow struct {
 	*walk.MainWindow
-	cbSerialPort,
-	cbBaudRate,
-	cbDataBits,
-	cbParity,
-	cbStopBits *walk.ComboBox
+	cbSerialPort   *walk.ComboBox
+	cbBaudRate     *walk.ComboBox
+	cbDataBits     *walk.ComboBox
+	cbParity       *walk.ComboBox
+	cbStopBits     *walk.ComboBox
+	btnSerialOpen  *walk.PushButton
+	txtSerialState *walk.Label
 
 	scItems SerialConfigItems
 	sc      *serial.Config
@@ -139,10 +149,10 @@ func (mw *mwMainWindow) openSerial() {
 }
 
 func main() {
-	var db *walk.DataBinder
+	//var db *walk.DataBinder
 	//serialConfig := new(serial.Config)
 
-	mw := &mwMainWindow{}
+	mw := mwMainWindow{}
 	mw.scItems = getSerialConfigItems()
 	mw.sc = new(serial.Config)
 
@@ -161,12 +171,13 @@ func main() {
 							},
 							ComboBox{
 								AssignTo:      &mw.cbSerialPort,
+								Name:          "Name",
 								MaxSize:       Size{Width: 100, Height: 0},
 								MinSize:       Size{Width: 100, Height: 0},
 								BindingMember: "Value",
 								DisplayMember: "Name",
 								Model:         mw.scItems.PortList,
-								Value:         Bind("Name"),
+								//Value:         Bind("Name"),
 							},
 						},
 					},
@@ -178,12 +189,13 @@ func main() {
 							},
 							ComboBox{
 								AssignTo:      &mw.cbBaudRate,
+								Name:          "Baud",
 								MaxSize:       Size{Width: 100, Height: 0},
 								MinSize:       Size{Width: 100, Height: 0},
 								BindingMember: "Value",
 								DisplayMember: "Name",
 								Model:         mw.scItems.BaudRate,
-								Value:         Bind("Baud"),
+								//Value:         Bind("Baud"),
 							},
 						},
 					},
@@ -195,12 +207,13 @@ func main() {
 							},
 							ComboBox{
 								AssignTo:      &mw.cbDataBits,
+								Name:          "Size",
 								MaxSize:       Size{Width: 100, Height: 0},
 								MinSize:       Size{Width: 100, Height: 0},
 								BindingMember: "Value",
 								DisplayMember: "Name",
 								Model:         mw.scItems.DataBits,
-								Value:         Bind("Size"),
+								//Value:         Bind("Size"),
 							},
 						},
 					},
@@ -212,12 +225,13 @@ func main() {
 							},
 							ComboBox{
 								AssignTo:      &mw.cbStopBits,
+								Name:          "StopBits",
 								MaxSize:       Size{Width: 100, Height: 0},
 								MinSize:       Size{Width: 100, Height: 0},
 								BindingMember: "Value",
 								DisplayMember: "Name",
 								Model:         mw.scItems.StopBits,
-								Value:         Bind("StopBits"),
+								//Value:         Bind("StopBits"),
 							},
 						},
 					},
@@ -229,12 +243,13 @@ func main() {
 							},
 							ComboBox{
 								AssignTo:      &mw.cbParity,
+								Name:          "Parity",
 								MaxSize:       Size{Width: 100, Height: 0},
 								MinSize:       Size{Width: 100, Height: 0},
 								BindingMember: "Value",
 								DisplayMember: "Name",
 								Model:         mw.scItems.Parity,
-								Value:         Bind("Parity"),
+								//Value:         Bind("Parity"),
 							},
 						},
 					},
@@ -242,22 +257,66 @@ func main() {
 						Layout: HBox{MarginsZero: true},
 						Children: []Widget{
 							PushButton{
-								Text: "打开串口",
+								AssignTo: &mw.btnSerialOpen,
+								Name:     "SerialOpen",
+								Text:     "打开串口",
 								OnClicked: func() {
-									if err := db.Submit(); err != nil {
-										log.Print(err)
-										return
+									if mw.btnSerialOpen.Text() == "关闭串口" {
+										bg, err := walk.NewSolidColorBrush(walk.RGB(255, 0, 0))
+										if err != nil {
+											log.Print(err)
+										}
+										mw.txtSerialState.SetBackground(bg)
+										if err := mw.txtSerialState.SetText("OFF"); err != nil {
+											log.Print(err)
+											return
+										}
+										if err := mw.btnSerialOpen.SetText("打开串口"); err != nil {
+											log.Print(err)
+											return
+										}
+									} else {
+										bg, err := walk.NewSolidColorBrush(walk.RGB(0, 255, 0))
+										if err != nil {
+											log.Print(err)
+										}
+										mw.txtSerialState.SetBackground(bg)
+										if err := mw.txtSerialState.SetText("ON"); err != nil {
+											log.Print(err)
+											return
+										}
+										if err := mw.btnSerialOpen.SetText("关闭串口"); err != nil {
+											log.Print(err)
+											return
+										}
 									}
-									mw.openSerial()
+									//if err := db.Submit();
+									//err != nil {
+									//	log.Print(err)
+									//	return
+									//}
+									//mw.openSerial()
 								},
 							},
+							HSpacer{},
 							Label{
-								Text: "OFF",
+								AssignTo:   &mw.txtSerialState,
+								Background: SolidColorBrush{Color: walk.RGB(255, 0, 0)},
+								MaxSize:    Size{Width: 50, Height: 0},
+								MinSize:    Size{Width: 50, Height: 0},
+								//Enabled:    false,
+								Alignment: AlignCenter,
+								//ReadOnly:   true,
+								TextColor: walk.RGB(0, 0, 0),
+								Text:      "OFF",
 							},
 						},
 					},
 					//VSpacer{},
 				},
+			},
+			Label{
+				//Text: Bind("Parity.value"),
 			},
 			VSpacer{},
 		},
@@ -286,12 +345,12 @@ func main() {
 		AssignTo: &mw.MainWindow,
 		//Title:    "SerialTool By Golang",
 		Title: Bind("'Animal Details' + (sc.Name == '' ? '' : ' - ' + sc.Name)"),
-		DataBinder: DataBinder{
-			AssignTo:       &db,
-			Name:           "sc",
-			DataSource:     mw.sc,
-			ErrorPresenter: ToolTipErrorPresenter{},
-		},
+		//DataBinder: DataBinder{
+		//	AssignTo:       &db,
+		//	Name:           "sc",
+		//	DataSource:     mw.sc,
+		//	ErrorPresenter: ToolTipErrorPresenter{},
+		//},
 		MinSize: Size{Width: 600, Height: 400},
 		Layout:  HBox{},
 		Children: []Widget{
