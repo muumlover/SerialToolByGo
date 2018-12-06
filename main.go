@@ -182,6 +182,7 @@ func main() {
 		AssignTo: &mw.MainWindow,
 		Title:    Bind("'Animal Details' + (sc.Name == '' ? '' : ' - ' + sc.Name)"),
 		MinSize:  Size{Width: 600, Height: 400},
+		Size:     Size{Width: 600, Height: 400},
 		Visible:  false,
 		Layout:   HBox{},
 		Children: []Widget{
@@ -210,6 +211,7 @@ func main() {
 												MinSize:       Size{Width: 80, Height: 0},
 												AssignTo:      &mw.cbSerialPort,
 												BindingMember: "Value",
+												CurrentIndex:  0,
 												DisplayMember: "Name",
 												Model:         mw.scItems.PortList,
 											},
@@ -228,6 +230,7 @@ func main() {
 												MinSize:       Size{Width: 80, Height: 0},
 												AssignTo:      &mw.cbBaudRate,
 												BindingMember: "Value",
+												CurrentIndex:  6,
 												DisplayMember: "Name",
 												Model:         mw.scItems.BaudRate,
 											},
@@ -246,6 +249,7 @@ func main() {
 												MinSize:       Size{Width: 80, Height: 0},
 												AssignTo:      &mw.cbDataBits,
 												BindingMember: "Value",
+												CurrentIndex:  0,
 												DisplayMember: "Name",
 												Model:         mw.scItems.DataBits,
 											},
@@ -264,6 +268,7 @@ func main() {
 												MinSize:       Size{Width: 80, Height: 0},
 												AssignTo:      &mw.cbStopBits,
 												BindingMember: "Value",
+												CurrentIndex:  0,
 												DisplayMember: "Name",
 												Model:         mw.scItems.StopBits,
 											},
@@ -282,6 +287,7 @@ func main() {
 												MinSize:       Size{Width: 80, Height: 0},
 												AssignTo:      &mw.cbParity,
 												BindingMember: "Value",
+												CurrentIndex:  0,
 												DisplayMember: "Name",
 												Model:         mw.scItems.Parity,
 											},
@@ -328,14 +334,14 @@ func main() {
 											},
 											HSpacer{},
 											Label{
-												AssignTo:   &mw.txtSerialState,
-												Name:       "SerialState",
-												Background: SolidColorBrush{Color: walk.RGB(255, 0, 0)},
-												MaxSize:    Size{Width: 50, Height: 0},
-												MinSize:    Size{Width: 50, Height: 0},
-												Alignment:  AlignCenter,
-												TextColor:  walk.RGB(0, 0, 0),
-												Text:       "OFF",
+												AssignTo:      &mw.txtSerialState,
+												Name:          "SerialState",
+												Background:    SolidColorBrush{Color: walk.RGB(255, 0, 0)},
+												MaxSize:       Size{Width: 50, Height: 0},
+												MinSize:       Size{Width: 50, Height: 0},
+												TextAlignment: AlignCenter,
+												TextColor:     walk.RGB(0, 0, 0),
+												Text:          "OFF",
 											},
 										},
 									},
@@ -382,26 +388,6 @@ func main() {
 		Width:  mw.Width(),
 		Height: mw.Height(),
 	}); err != nil {
-		log.Print(err)
-		return
-	}
-	if err := mw.cbSerialPort.SetCurrentIndex(0); err != nil {
-		log.Print(err)
-		return
-	}
-	if err := mw.cbBaudRate.SetCurrentIndex(6); err != nil {
-		log.Print(err)
-		return
-	}
-	if err := mw.cbDataBits.SetCurrentIndex(0); err != nil {
-		log.Print(err)
-		return
-	}
-	if err := mw.cbParity.SetCurrentIndex(0); err != nil {
-		log.Print(err)
-		return
-	}
-	if err := mw.cbStopBits.SetCurrentIndex(0); err != nil {
 		log.Print(err)
 		return
 	}
