@@ -29,7 +29,9 @@ func getPortNameList() []PortNameItem {
 	}
 	portList := make([]PortNameItem, len(dst))
 	for i, v := range dst {
-		portList[i] = PortNameItem{v.Name, strings.Split(strings.Split(v.Name, "(")[1], ")")[0]}
+		name := strings.Split(v.Name, "(")[0]
+		port := strings.Split(strings.Split(v.Name, "(")[1], ")")[0]
+		portList[i] = PortNameItem{port + " : " + name, port}
 	}
 	return portList
 }
@@ -188,8 +190,8 @@ func main() {
 		Children: []Widget{
 			Composite{
 				Layout:  VBox{MarginsZero: true},
-				MaxSize: Size{Width: 150, Height: 10},
-				MinSize: Size{Width: 150, Height: 10},
+				MaxSize: Size{Width: 160, Height: 10},
+				MinSize: Size{Width: 160, Height: 10},
 				Children: []Widget{
 					Composite{
 						Layout: VBox{MarginsZero: true},
@@ -202,7 +204,8 @@ func main() {
 										Layout: VBox{MarginsZero: true},
 										Children: []Widget{
 											Label{
-												Text: "端口号",
+												Text:          "端口号",
+												TextAlignment: AlignNear,
 											},
 											ComboBox{
 												Enabled:       Bind("SerialState.Text=='OFF'"),
@@ -347,7 +350,14 @@ func main() {
 									},
 								},
 							},
-							Label{},
+							Label{
+								Text:          "端口号",
+								TextAlignment: AlignCenter,
+							},
+							Label{
+								Text:          "端口号",
+								TextAlignment: AlignNear,
+							},
 							VSpacer{},
 						},
 					},

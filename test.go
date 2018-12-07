@@ -1,31 +1,30 @@
 package main
 
 import (
-	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
-	"strings"
 )
 
 func main() {
-	var inTE, outTE *walk.TextEdit
 
 	MainWindow{
-		Title:   "SCREAMO",
-		MinSize: Size{Width: 600, Height: 400},
-		Size:    Size{600, 400},
+		Title:   "Label Test",
+		MinSize: Size{Width: 300, Height: 200},
 		Layout:  VBox{},
 		Children: []Widget{
-			HSplitter{
-				Children: []Widget{
-					TextEdit{AssignTo: &inTE},
-					TextEdit{AssignTo: &outTE, ReadOnly: true},
-				},
+			Label{
+				Text: "Default",
 			},
-			PushButton{
-				Text: "SCREAM",
-				OnClicked: func() {
-					outTE.SetText(strings.ToUpper(inTE.Text()))
-				},
+			Label{
+				Text:          "AlignNear",
+				TextAlignment: AlignNear,
+			},
+			Label{
+				Text:          "AlignCenter",
+				TextAlignment: AlignCenter,
+			},
+			Label{
+				Text:          "AlignFar",
+				TextAlignment: AlignFar,
 			},
 		},
 	}.Run()
