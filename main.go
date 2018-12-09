@@ -2,13 +2,15 @@ package main
 
 import (
 	"github.com/StackExchange/wmi"
-	"github.com/lxn/walk"
-	. "github.com/lxn/walk/declarative"
+	"github.com/axgle/mahonia"
 	"github.com/lxn/win"
+	"github.com/muumlover/walk"
+	. "github.com/muumlover/walk/declarative"
 	"github.com/tarm/serial"
 	"log"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type PortNameItem struct {
@@ -110,21 +112,12 @@ func getSerialConfigItems() SerialConfigItems {
 	}
 }
 
-type mwMainWindow struct {
-	*walk.MainWindow
-	cbSerialPort   *walk.ComboBox
-	cbBaudRate     *walk.ComboBox
-	cbDataBits     *walk.ComboBox
-	cbParity       *walk.ComboBox
-	cbStopBits     *walk.ComboBox
-	btnSerialOpen  *walk.PushButton
-	txtSerialState *walk.Label
-	txtSerialRecv  *walk.TextEdit
-	txtSerialSend  *walk.TextEdit
-
-	scItems SerialConfigItems
-	sc      *serial.Config
-	sp      *serial.Port
+func UseNewEncoder(src string, oldEncoder string, newEncoder string) string {
+	srcDecoder := mahonia.NewDecoder(oldEncoder)
+	desDecoder := mahonia.NewDecoder(newEncoder)
+	resStr := srcDecoder.ConvertString(src)
+	_, resBytes, _ := desDecoder.Translate([]byte(resStr), true)
+	return string(resBytes)
 }
 
 func (mw *mwMainWindow) openSerial() error {
@@ -134,6 +127,7 @@ func (mw *mwMainWindow) openSerial() error {
 	sc.Size = mw.cbDataBits.Value().(byte)
 	sc.Parity = mw.cbParity.Value().(serial.Parity)
 	sc.StopBits = mw.cbStopBits.Value().(serial.StopBits)
+	sc.ReadTimeout = time.Millisecond
 	s, err := serial.OpenPort(&sc)
 	if err != nil {
 		return err
@@ -145,6 +139,8 @@ func (mw *mwMainWindow) openSerial() error {
 	}
 
 	go func(s *serial.Port) {
+		isHalf := false
+		half := byte(0)
 		for {
 			buf := make([]byte, 10240)
 			n, err = s.Read(buf)
@@ -152,12 +148,30 @@ func (mw *mwMainWindow) openSerial() error {
 				log.Print(err)
 				break
 			}
-			// noinspection ALL
+			if n == 0 && !isHalf {
+				continue
+			}
+			if isHalf {
+				buf = append([]byte{half}, buf[:n]...)
+				n += 1
+				isHalf = false
+			} else if n == 1 {
+				half = buf[:n][0]
+				isHalf = true
+				continue
+			}
+			// noinspection ALL0
 			log.Print(buf[:n])
-			str := string(buf[:n])
+			//str := string(buf[:n])
+			//log.Print(str)
+			decoder := mahonia.NewDecoder("gbk")
+			_, cdata, _ := decoder.Translate(buf[:n], true)
+			str := string(cdata)
 			log.Print(str)
 			str = strings.Replace(str, "\x00", "", -1)
+			mw.txtSerialRecv.SetSuspended(true)
 			mw.txtSerialRecv.AppendText(str)
+			mw.txtSerialRecv.SetSuspended(false)
 			if err != nil {
 				log.Print(err)
 				break
@@ -175,6 +189,23 @@ func (mw *mwMainWindow) closeSerial() error {
 	return nil
 }
 
+type mwMainWindow struct {
+	*walk.MainWindow
+	cbSerialPort   *walk.ComboBox
+	cbBaudRate     *walk.ComboBox
+	cbDataBits     *walk.ComboBox
+	cbParity       *walk.ComboBox
+	cbStopBits     *walk.ComboBox
+	btnSerialOpen  *walk.PushButton
+	txtSerialState *walk.Label
+	txtSerialRecv  *walk.TextEdit
+	txtSerialSend  *walk.TextEdit
+
+	scItems SerialConfigItems
+	sc      *serial.Config
+	sp      *serial.Port
+}
+
 func main() {
 	mw := mwMainWindow{}
 	mw.scItems = getSerialConfigItems()
@@ -182,7 +213,8 @@ func main() {
 
 	if err := (MainWindow{
 		AssignTo: &mw.MainWindow,
-		Title:    Bind("'Animal Details' + (sc.Name == '' ? '' : ' - ' + sc.Name)"),
+		Icon:     "favicon.ico",
+		Title:    "SerialTool",
 		MinSize:  Size{Width: 600, Height: 400},
 		Size:     Size{Width: 600, Height: 400},
 		Visible:  false,
@@ -350,14 +382,6 @@ func main() {
 									},
 								},
 							},
-							Label{
-								Text:          "端口号",
-								TextAlignment: AlignCenter,
-							},
-							Label{
-								Text:          "端口号",
-								TextAlignment: AlignNear,
-							},
 							VSpacer{},
 						},
 					},
@@ -369,15 +393,36 @@ func main() {
 				Layout: VBox{MarginsZero: true},
 				Children: []Widget{
 					TextEdit{
-						Name:     "txtSerialRecv",
-						AssignTo: &mw.txtSerialRecv,
+						Name:       "txtSerialRecv",
+						AssignTo:   &mw.txtSerialRecv,
+						Background: SolidColorBrush{Color: walk.RGB(0, 0, 0)},
+						TextColor:  walk.RGB(0, 255, 0),
+						//Enabled:    false,
+						//Font:     Font{Family: "Courier New", PointSize: 10},
+						Font:     Font{Family: "Consolas", PointSize: 10},
 						ReadOnly: true,
 						VScroll:  true,
 					},
 					VSpacer{},
-					TextEdit{
-						Name:     "txtSerialSend",
-						AssignTo: &mw.txtSerialSend,
+					Composite{
+						Layout: HBox{MarginsZero: true},
+						Children: []Widget{
+							TextEdit{
+								Name:     "txtSerialSend",
+								AssignTo: &mw.txtSerialSend,
+								Font:     Font{Family: "Consolas", PointSize: 10},
+							},
+							HSpacer{},
+							PushButton{
+								Text: "SCREAM",
+								OnClicked: func() {
+									_, err := mw.sp.Write([]byte(mw.txtSerialSend.Text()))
+									if err != nil {
+										log.Print(err)
+									}
+								},
+							},
+						},
 					},
 				},
 			},

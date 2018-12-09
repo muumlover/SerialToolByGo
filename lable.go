@@ -17,13 +17,14 @@ func main() {
 			HSplitter{
 				Children: []Widget{
 					TextEdit{AssignTo: &inTE},
-					TextEdit{AssignTo: &outTE, ReadOnly: true},
+					TextEdit{AssignTo: &outTE,
+						Background: SolidColorBrush{Color: walk.RGB(255, 255, 255)}, ReadOnly: true},
 				},
 			},
 			PushButton{
 				Text: "SCREAM",
 				OnClicked: func() {
-					outTE.SetText(strings.ToUpper(inTE.Text()))
+					outTE.AppendText(strings.ToUpper(inTE.Text()))
 				},
 			},
 		},
