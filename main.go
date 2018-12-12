@@ -249,6 +249,15 @@ func main() {
 												CurrentIndex:  0,
 												DisplayMember: "Name",
 												Model:         mw.scItems.PortList,
+												OnDropDown: func() {
+													go func() {
+														if err := mw.cbSerialPort.SetModel(getPortNameList()); err != nil {
+															log.Print(err)
+															return
+														}
+														//Todo 列表减少时刷新显示
+													}()
+												},
 											},
 										},
 									},
