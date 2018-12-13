@@ -94,33 +94,7 @@ func getStopBitsList() []StopBitItem {
 	}
 }
 
-type SerialConfigItems struct {
-	PortList []PortNameItem
-	BaudRate []BaudRateItem
-	DataBits []DataBitsItem
-	Parity   []ParityItem
-	StopBits []StopBitItem
-}
-
-func getSerialConfigItems() SerialConfigItems {
-	return SerialConfigItems{
-		getPortNameList(),
-		getBaudRateList(),
-		getDataBitsList(),
-		getParityList(),
-		getStopBitsList(),
-	}
-}
-
-func UseNewEncoder(src string, oldEncoder string, newEncoder string) string {
-	srcDecoder := mahonia.NewDecoder(oldEncoder)
-	desDecoder := mahonia.NewDecoder(newEncoder)
-	resStr := srcDecoder.ConvertString(src)
-	_, resBytes, _ := desDecoder.Translate([]byte(resStr), true)
-	return string(resBytes)
-}
-
-func (mw *mwMainWindow) openSerial() error {
+func (mw *myWindow) openSerial() error {
 	sc := serial.Config{}
 	sc.Name = mw.cbSerialPort.Value().(string)
 	sc.Baud = mw.cbBaudRate.Value().(int)
@@ -128,22 +102,17 @@ func (mw *mwMainWindow) openSerial() error {
 	sc.Parity = mw.cbParity.Value().(serial.Parity)
 	sc.StopBits = mw.cbStopBits.Value().(serial.StopBits)
 	sc.ReadTimeout = time.Millisecond
-	s, err := serial.OpenPort(&sc)
+	p, err := serial.OpenPort(&sc)
 	if err != nil {
 		return err
 	}
-	mw.sp = s
-	n, err := s.Write([]byte("test"))
-	if err != nil {
-		return err
-	}
-
-	go func(s *serial.Port) {
+	msp.Port = p
+	go func(sp mySerialPort) {
 		isHalf := false
 		half := byte(0)
 		for {
 			buf := make([]byte, 10240)
-			n, err = s.Read(buf)
+			n, err := sp.Read(buf)
 			if err != nil {
 				log.Print(err)
 				break
@@ -164,7 +133,7 @@ func (mw *mwMainWindow) openSerial() error {
 			log.Print(buf[:n])
 			//str := string(buf[:n])
 			//log.Print(str)
-			decoder := mahonia.NewDecoder("gbk")
+			decoder := mahonia.NewDecoder(sp.dataEncoding)
 			_, cdata, _ := decoder.Translate(buf[:n], true)
 			str := string(cdata)
 			log.Print(str)
@@ -177,19 +146,18 @@ func (mw *mwMainWindow) openSerial() error {
 				break
 			}
 		}
-	}(s)
-
+	}(msp)
 	return nil
 }
 
-func (mw *mwMainWindow) closeSerial() error {
-	if err := mw.sp.Close(); err != nil {
+func (mw *myWindow) closeSerial() error {
+	if err := msp.Close(); err != nil {
 		return err
 	}
 	return nil
 }
 
-type mwMainWindow struct {
+type myWindow struct {
 	*walk.MainWindow
 	cbSerialPort   *walk.ComboBox
 	cbBaudRate     *walk.ComboBox
@@ -200,16 +168,18 @@ type mwMainWindow struct {
 	txtSerialState *walk.Label
 	txtSerialRecv  *walk.TextEdit
 	txtSerialSend  *walk.TextEdit
-
-	scItems SerialConfigItems
-	sc      *serial.Config
-	sp      *serial.Port
+	cbEncoding     *walk.ComboBox
 }
 
+type mySerialPort struct {
+	*serial.Port
+	dataEncoding string
+}
+
+var msp = mySerialPort{dataEncoding: "gbk"}
+
 func main() {
-	mw := mwMainWindow{}
-	mw.scItems = getSerialConfigItems()
-	mw.sc = new(serial.Config)
+	mw := myWindow{}
 
 	if err := (MainWindow{
 		AssignTo: &mw.MainWindow,
@@ -222,8 +192,8 @@ func main() {
 		Children: []Widget{
 			Composite{
 				Layout:  VBox{MarginsZero: true},
-				MaxSize: Size{Width: 160, Height: 10},
-				MinSize: Size{Width: 160, Height: 10},
+				MaxSize: Size{Width: 160, Height: 160},
+				MinSize: Size{Width: 160, Height: 160},
 				Children: []Widget{
 					Composite{
 						Layout: VBox{MarginsZero: true},
@@ -248,7 +218,7 @@ func main() {
 												BindingMember: "Value",
 												CurrentIndex:  0,
 												DisplayMember: "Name",
-												Model:         mw.scItems.PortList,
+												Model:         getPortNameList(),
 												OnDropDown: func() {
 													go func() {
 														if err := mw.cbSerialPort.SetModel(getPortNameList()); err != nil {
@@ -276,7 +246,7 @@ func main() {
 												BindingMember: "Value",
 												CurrentIndex:  6,
 												DisplayMember: "Name",
-												Model:         mw.scItems.BaudRate,
+												Model:         getBaudRateList(),
 											},
 										},
 									},
@@ -295,26 +265,7 @@ func main() {
 												BindingMember: "Value",
 												CurrentIndex:  0,
 												DisplayMember: "Name",
-												Model:         mw.scItems.DataBits,
-											},
-										},
-									},
-									Composite{
-										Layout: HBox{MarginsZero: true},
-										Children: []Widget{
-											Label{
-												Text: "停止位",
-											},
-											ComboBox{
-												Enabled:       Bind("SerialState.Text=='OFF'"),
-												Name:          "StopBits",
-												MaxSize:       Size{Width: 80, Height: 0},
-												MinSize:       Size{Width: 80, Height: 0},
-												AssignTo:      &mw.cbStopBits,
-												BindingMember: "Value",
-												CurrentIndex:  0,
-												DisplayMember: "Name",
-												Model:         mw.scItems.StopBits,
+												Model:         getDataBitsList(),
 											},
 										},
 									},
@@ -333,7 +284,26 @@ func main() {
 												BindingMember: "Value",
 												CurrentIndex:  0,
 												DisplayMember: "Name",
-												Model:         mw.scItems.Parity,
+												Model:         getParityList(),
+											},
+										},
+									},
+									Composite{
+										Layout: HBox{MarginsZero: true},
+										Children: []Widget{
+											Label{
+												Text: "停止位",
+											},
+											ComboBox{
+												Enabled:       Bind("SerialState.Text=='OFF'"),
+												Name:          "StopBits",
+												MaxSize:       Size{Width: 80, Height: 0},
+												MinSize:       Size{Width: 80, Height: 0},
+												AssignTo:      &mw.cbStopBits,
+												BindingMember: "Value",
+												CurrentIndex:  0,
+												DisplayMember: "Name",
+												Model:         getStopBitsList(),
 											},
 										},
 									},
@@ -416,21 +386,65 @@ func main() {
 					Composite{
 						Layout: HBox{MarginsZero: true},
 						Children: []Widget{
+							Label{
+								Text: "编码方式",
+							},
+							ComboBox{
+								AssignTo:     &mw.cbEncoding,
+								MaxSize:      Size{Width: 80, Height: 0},
+								MinSize:      Size{Width: 80, Height: 0},
+								CurrentIndex: 0,
+								Model:        []string{"gbk", "utf8"},
+								OnCurrentIndexChanged: func() {
+									msp.dataEncoding = mw.cbEncoding.Value().(string)
+								},
+							},
+							HSpacer{},
+						},
+					},
+					Composite{
+						Layout:  HBox{MarginsZero: true},
+						MaxSize: Size{Width: 100, Height: 100},
+						MinSize: Size{Width: 100, Height: 100},
+						Children: []Widget{
 							TextEdit{
 								Name:     "txtSerialSend",
 								AssignTo: &mw.txtSerialSend,
 								Font:     Font{Family: "Consolas", PointSize: 10},
 							},
 							HSpacer{},
-							PushButton{
-								Text: "SCREAM",
-								OnClicked: func() {
-									_, err := mw.sp.Write([]byte(mw.txtSerialSend.Text()))
-									if err != nil {
-										log.Print(err)
-									}
+							Composite{
+								Layout: VBox{MarginsZero: true},
+								Children: []Widget{
+									PushButton{
+										Text: "发送",
+										OnClicked: func() {
+											encoder := mahonia.NewEncoder(msp.dataEncoding)
+											result := encoder.ConvertString(mw.txtSerialSend.Text())
+											_, err := msp.Write([]byte(result))
+											if err != nil {
+												log.Print(err)
+											}
+										},
+									},
 								},
 							},
+						},
+					},
+					Composite{
+						Layout: HBox{MarginsZero: true},
+						Children: []Widget{
+							CheckBox{
+								Text: "定时发送",
+							},
+							Label{
+								Text: "周期",
+							},
+							NumberEdit{},
+							Label{
+								Text: "ms",
+							},
+							HSpacer{},
 						},
 					},
 				},
