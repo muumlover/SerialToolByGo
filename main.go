@@ -125,6 +125,7 @@ func (mw *myWindow) openSerial() error {
 				n += 1
 				isHalf = false
 			} else if n == 1 {
+				//} else if n%2 == 1 {
 				half = buf[:n][0]
 				isHalf = true
 				continue
@@ -185,8 +186,8 @@ func main() {
 		AssignTo: &mw.MainWindow,
 		Icon:     "favicon.ico",
 		Title:    "SerialTool",
-		MinSize:  Size{Width: 600, Height: 400},
-		Size:     Size{Width: 600, Height: 400},
+		MinSize:  Size{Width: 800, Height: 600},
+		Size:     Size{Width: 800, Height: 600},
 		Visible:  false,
 		Layout:   HBox{},
 		Children: []Widget{
@@ -195,179 +196,234 @@ func main() {
 				MaxSize: Size{Width: 160, Height: 160},
 				MinSize: Size{Width: 160, Height: 160},
 				Children: []Widget{
-					Composite{
-						Layout: VBox{MarginsZero: true},
+					GroupBox{
+						Title:  "通讯设置",
+						Layout: VBox{},
 						Children: []Widget{
-							GroupBox{
-								Title:  "设置",
-								Layout: VBox{},
+							Composite{
+								Layout: VBox{MarginsZero: true},
 								Children: []Widget{
-									Composite{
-										Layout: VBox{MarginsZero: true},
-										Children: []Widget{
-											Label{
-												Text:          "端口号",
-												TextAlignment: AlignNear,
-											},
-											ComboBox{
-												Enabled:       Bind("SerialState.Text=='OFF'"),
-												Name:          "Name",
-												MaxSize:       Size{Width: 80, Height: 0},
-												MinSize:       Size{Width: 80, Height: 0},
-												AssignTo:      &mw.cbSerialPort,
-												BindingMember: "Value",
-												CurrentIndex:  0,
-												DisplayMember: "Name",
-												Model:         getPortNameList(),
-												OnDropDown: func() {
-													go func() {
-														if err := mw.cbSerialPort.SetModel(getPortNameList()); err != nil {
-															log.Print(err)
-															return
-														}
-														//Todo 列表减少时刷新显示
-													}()
-												},
-											},
-										},
+									Label{
+										Text:          "端口号",
+										TextAlignment: AlignNear,
+										Visible:       false,
 									},
-									Composite{
-										Layout: HBox{MarginsZero: true},
-										Children: []Widget{
-											Label{
-												Text: "波特率",
-											},
-											ComboBox{
-												Enabled:       Bind("SerialState.Text=='OFF'"),
-												Name:          "Baud",
-												MaxSize:       Size{Width: 80, Height: 0},
-												MinSize:       Size{Width: 80, Height: 0},
-												AssignTo:      &mw.cbBaudRate,
-												BindingMember: "Value",
-												CurrentIndex:  6,
-												DisplayMember: "Name",
-												Model:         getBaudRateList(),
-											},
-										},
-									},
-									Composite{
-										Layout: HBox{MarginsZero: true},
-										Children: []Widget{
-											Label{
-												Text: "数据位",
-											},
-											ComboBox{
-												Enabled:       Bind("SerialState.Text=='OFF'"),
-												Name:          "Size",
-												MaxSize:       Size{Width: 80, Height: 0},
-												MinSize:       Size{Width: 80, Height: 0},
-												AssignTo:      &mw.cbDataBits,
-												BindingMember: "Value",
-												CurrentIndex:  0,
-												DisplayMember: "Name",
-												Model:         getDataBitsList(),
-											},
-										},
-									},
-									Composite{
-										Layout: HBox{MarginsZero: true},
-										Children: []Widget{
-											Label{
-												Text: "校验位",
-											},
-											ComboBox{
-												Enabled:       Bind("SerialState.Text=='OFF'"),
-												Name:          "Parity",
-												MaxSize:       Size{Width: 80, Height: 0},
-												MinSize:       Size{Width: 80, Height: 0},
-												AssignTo:      &mw.cbParity,
-												BindingMember: "Value",
-												CurrentIndex:  0,
-												DisplayMember: "Name",
-												Model:         getParityList(),
-											},
-										},
-									},
-									Composite{
-										Layout: HBox{MarginsZero: true},
-										Children: []Widget{
-											Label{
-												Text: "停止位",
-											},
-											ComboBox{
-												Enabled:       Bind("SerialState.Text=='OFF'"),
-												Name:          "StopBits",
-												MaxSize:       Size{Width: 80, Height: 0},
-												MinSize:       Size{Width: 80, Height: 0},
-												AssignTo:      &mw.cbStopBits,
-												BindingMember: "Value",
-												CurrentIndex:  0,
-												DisplayMember: "Name",
-												Model:         getStopBitsList(),
-											},
-										},
-									},
-									Composite{
-										Layout: HBox{MarginsZero: true},
-										Children: []Widget{
-											PushButton{
-												AssignTo: &mw.btnSerialOpen,
-												Name:     "SerialOpen",
-												Text:     Bind("SerialState.Text=='OFF'?'打开串口':'关闭串口'"),
-												OnClicked: func() {
-													if mw.txtSerialState.Text() == "ON" {
-														if err := mw.closeSerial(); err != nil {
-															log.Print(err)
-															return
-														}
-														bg, err := walk.NewSolidColorBrush(walk.RGB(255, 0, 0))
-														if err != nil {
-															log.Print(err)
-														}
-														mw.txtSerialState.SetBackground(bg)
-														if err := mw.txtSerialState.SetText("OFF"); err != nil {
-															log.Print(err)
-															return
-														}
-													} else {
-														if err := mw.openSerial(); err != nil {
-															log.Print(err)
-															return
-														}
-														bg, err := walk.NewSolidColorBrush(walk.RGB(0, 255, 0))
-														if err != nil {
-															log.Print(err)
-														}
-														mw.txtSerialState.SetBackground(bg)
-														if err := mw.txtSerialState.SetText("ON"); err != nil {
-															log.Print(err)
-															return
-														}
-													}
-												},
-											},
-											HSpacer{},
-											Label{
-												AssignTo:      &mw.txtSerialState,
-												Name:          "SerialState",
-												Background:    SolidColorBrush{Color: walk.RGB(255, 0, 0)},
-												MaxSize:       Size{Width: 50, Height: 0},
-												MinSize:       Size{Width: 50, Height: 0},
-												TextAlignment: AlignCenter,
-												TextColor:     walk.RGB(0, 0, 0),
-												Text:          "OFF",
-											},
+									ComboBox{
+										Enabled:       Bind("SerialState.Text=='OFF'"),
+										Name:          "Name",
+										MaxSize:       Size{Width: 80, Height: 0},
+										MinSize:       Size{Width: 80, Height: 0},
+										AssignTo:      &mw.cbSerialPort,
+										BindingMember: "Value",
+										CurrentIndex:  0,
+										DisplayMember: "Name",
+										Model:         getPortNameList(),
+										OnDropDown: func() {
+											go func() {
+												if err := mw.cbSerialPort.SetModel(getPortNameList()); err != nil {
+													log.Print(err)
+													return
+												}
+												//Todo 列表减少时刷新显示
+											}()
 										},
 									},
 								},
 							},
-							VSpacer{},
+							Composite{
+								Layout: HBox{MarginsZero: true},
+								Children: []Widget{
+									Label{
+										Text: "波特率",
+									},
+									ComboBox{
+										Enabled:       Bind("SerialState.Text=='OFF'"),
+										Name:          "Baud",
+										MaxSize:       Size{Width: 80, Height: 0},
+										MinSize:       Size{Width: 80, Height: 0},
+										AssignTo:      &mw.cbBaudRate,
+										BindingMember: "Value",
+										CurrentIndex:  6,
+										DisplayMember: "Name",
+										Model:         getBaudRateList(),
+									},
+								},
+							},
+							Composite{
+								Layout: HBox{MarginsZero: true},
+								Children: []Widget{
+									Label{
+										Text: "数据位",
+									},
+									ComboBox{
+										Enabled:       Bind("SerialState.Text=='OFF'"),
+										Name:          "Size",
+										MaxSize:       Size{Width: 80, Height: 0},
+										MinSize:       Size{Width: 80, Height: 0},
+										AssignTo:      &mw.cbDataBits,
+										BindingMember: "Value",
+										CurrentIndex:  0,
+										DisplayMember: "Name",
+										Model:         getDataBitsList(),
+									},
+								},
+							},
+							Composite{
+								Layout: HBox{MarginsZero: true},
+								Children: []Widget{
+									Label{
+										Text: "校验位",
+									},
+									ComboBox{
+										Enabled:       Bind("SerialState.Text=='OFF'"),
+										Name:          "Parity",
+										MaxSize:       Size{Width: 80, Height: 0},
+										MinSize:       Size{Width: 80, Height: 0},
+										AssignTo:      &mw.cbParity,
+										BindingMember: "Value",
+										CurrentIndex:  0,
+										DisplayMember: "Name",
+										Model:         getParityList(),
+									},
+								},
+							},
+							Composite{
+								Layout: HBox{MarginsZero: true},
+								Children: []Widget{
+									Label{
+										Text: "停止位",
+									},
+									ComboBox{
+										Enabled:       Bind("SerialState.Text=='OFF'"),
+										Name:          "StopBits",
+										MaxSize:       Size{Width: 80, Height: 0},
+										MinSize:       Size{Width: 80, Height: 0},
+										AssignTo:      &mw.cbStopBits,
+										BindingMember: "Value",
+										CurrentIndex:  0,
+										DisplayMember: "Name",
+										Model:         getStopBitsList(),
+									},
+								},
+							},
+							Composite{
+								Layout: HBox{MarginsZero: true},
+								Children: []Widget{
+									PushButton{
+										AssignTo: &mw.btnSerialOpen,
+										Name:     "SerialOpen",
+										Text:     Bind("SerialState.Text=='OFF'?'打开串口':'关闭串口'"),
+										OnClicked: func() {
+											if mw.txtSerialState.Text() == "ON" {
+												if err := mw.closeSerial(); err != nil {
+													log.Print(err)
+													return
+												}
+												bg, err := walk.NewSolidColorBrush(walk.RGB(255, 0, 0))
+												if err != nil {
+													log.Print(err)
+												}
+												mw.txtSerialState.SetBackground(bg)
+												if err := mw.txtSerialState.SetText("OFF"); err != nil {
+													log.Print(err)
+													return
+												}
+											} else {
+												if err := mw.openSerial(); err != nil {
+													log.Print(err)
+													return
+												}
+												bg, err := walk.NewSolidColorBrush(walk.RGB(0, 255, 0))
+												if err != nil {
+													log.Print(err)
+												}
+												mw.txtSerialState.SetBackground(bg)
+												if err := mw.txtSerialState.SetText("ON"); err != nil {
+													log.Print(err)
+													return
+												}
+											}
+										},
+									},
+									Label{
+										AssignTo:      &mw.txtSerialState,
+										Name:          "SerialState",
+										Background:    SolidColorBrush{Color: walk.RGB(255, 0, 0)},
+										MaxSize:       Size{Width: 50, Height: 0},
+										MinSize:       Size{Width: 50, Height: 0},
+										TextAlignment: AlignCenter,
+										TextColor:     walk.RGB(0, 0, 0),
+										Text:          "OFF",
+									},
+								},
+							},
+						},
+					},
+					GroupBox{
+						Title:  "接收设置",
+						Layout: VBox{},
+						Children: []Widget{
+							Composite{
+								Layout: HBox{MarginsZero: true},
+								Children: []Widget{
+									Label{
+										Text: "编码方式",
+									},
+									ComboBox{
+										AssignTo:     &mw.cbEncoding,
+										CurrentIndex: 0,
+										Model:        []string{"gbk", "utf8"},
+										OnCurrentIndexChanged: func() {
+											msp.dataEncoding = mw.cbEncoding.Value().(string)
+										},
+									},
+								},
+							},
+							Composite{
+								Layout: HBox{MarginsZero: true},
+								Children: []Widget{
+									CheckBox{
+										Text: "十六进制",
+									},
+									HSpacer{},
+								},
+							},
+						},
+					},
+					GroupBox{
+						Title:  "发送设置",
+						Layout: VBox{},
+						Children: []Widget{
+							Composite{
+								Layout: HBox{MarginsZero: true},
+								Children: []Widget{
+									Label{
+										Text: "编码方式",
+									},
+									ComboBox{
+										AssignTo:     &mw.cbEncoding,
+										CurrentIndex: 0,
+										Model:        []string{"gbk", "utf8"},
+										OnCurrentIndexChanged: func() {
+											msp.dataEncoding = mw.cbEncoding.Value().(string)
+										},
+									},
+								},
+							},
+							Composite{
+								Layout: HBox{MarginsZero: true},
+								Children: []Widget{
+									CheckBox{
+										Text: "十六进制",
+									},
+									HSpacer{},
+								},
+							},
 						},
 					},
 					VSpacer{},
 				},
 			},
-			HSpacer{},
 			Composite{
 				Layout: VBox{MarginsZero: true},
 				Children: []Widget{
@@ -382,40 +438,42 @@ func main() {
 						ReadOnly: true,
 						VScroll:  true,
 					},
-					VSpacer{},
-					Composite{
-						Layout: HBox{MarginsZero: true},
-						Children: []Widget{
-							Label{
-								Text: "编码方式",
-							},
-							ComboBox{
-								AssignTo:     &mw.cbEncoding,
-								MaxSize:      Size{Width: 80, Height: 0},
-								MinSize:      Size{Width: 80, Height: 0},
-								CurrentIndex: 0,
-								Model:        []string{"gbk", "utf8"},
-								OnCurrentIndexChanged: func() {
-									msp.dataEncoding = mw.cbEncoding.Value().(string)
-								},
-							},
-							HSpacer{},
-						},
-					},
 					Composite{
 						Layout:  HBox{MarginsZero: true},
-						MaxSize: Size{Width: 100, Height: 100},
-						MinSize: Size{Width: 100, Height: 100},
+						MaxSize: Size{Width: 130, Height: 130},
+						MinSize: Size{Width: 130, Height: 130},
 						Children: []Widget{
 							TextEdit{
 								Name:     "txtSerialSend",
 								AssignTo: &mw.txtSerialSend,
 								Font:     Font{Family: "Consolas", PointSize: 10},
 							},
-							HSpacer{},
 							Composite{
-								Layout: VBox{MarginsZero: true},
+								Layout:  VBox{MarginsZero: true},
+								MaxSize: Size{Width: 100, Height: 100},
+								MinSize: Size{Width: 100, Height: 100},
 								Children: []Widget{
+									Composite{
+										Layout: HBox{MarginsZero: true},
+										Children: []Widget{
+											CheckBox{
+												Text: "定时发送",
+											},
+											HSpacer{},
+										},
+									},
+									Composite{
+										Layout: HBox{MarginsZero: true},
+										Children: []Widget{
+											Label{
+												Text: "周期",
+											},
+											NumberEdit{},
+											Label{
+												Text: "ms",
+											},
+										},
+									},
 									PushButton{
 										Text: "发送",
 										OnClicked: func() {
@@ -427,28 +485,16 @@ func main() {
 											}
 										},
 									},
+									VSpacer{},
 								},
 							},
+							//HSpacer{},
 						},
 					},
-					Composite{
-						Layout: HBox{MarginsZero: true},
-						Children: []Widget{
-							CheckBox{
-								Text: "定时发送",
-							},
-							Label{
-								Text: "周期",
-							},
-							NumberEdit{},
-							Label{
-								Text: "ms",
-							},
-							HSpacer{},
-						},
-					},
+					//VSpacer{},
 				},
 			},
+			//HSpacer{},
 		},
 		Functions: map[string]func(args ...interface{}) (interface{}, error){
 			"rgb": func(args ...interface{}) (interface{}, error) {
