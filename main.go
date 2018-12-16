@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"github.com/StackExchange/wmi"
 	"github.com/axgle/mahonia"
 	"github.com/lxn/win"
@@ -8,6 +9,7 @@ import (
 	. "github.com/muumlover/walk/declarative"
 	"github.com/tarm/serial"
 	"log"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -107,47 +109,172 @@ func (mw *myWindow) openSerial() error {
 		return err
 	}
 	msp.Port = p
-	go func(sp mySerialPort) {
-		isHalf := false
-		half := byte(0)
+	var b bytes.Buffer
+	go func() {
 		for {
-			buf := make([]byte, 10240)
-			n, err := sp.Read(buf)
+			buf := make([]byte, 1)
+			n, err := msp.Read(buf)
 			if err != nil {
 				log.Print(err)
 				break
 			}
-			if n == 0 && !isHalf {
-				continue
-			}
-			if isHalf {
-				buf = append([]byte{half}, buf[:n]...)
-				n += 1
-				isHalf = false
-			} else if n == 1 {
-				//} else if n%2 == 1 {
-				half = buf[:n][0]
-				isHalf = true
-				continue
-			}
-			// noinspection ALL0
-			log.Print(buf[:n])
-			//str := string(buf[:n])
-			//log.Print(str)
-			decoder := mahonia.NewDecoder(sp.dataEncoding)
-			_, cdata, _ := decoder.Translate(buf[:n], true)
-			str := string(cdata)
-			log.Print(str)
-			str = strings.Replace(str, "\x00", "", -1)
-			mw.txtSerialRecv.SetSuspended(true)
-			mw.txtSerialRecv.AppendText(str)
-			mw.txtSerialRecv.SetSuspended(false)
+			b.Write(buf[:n])
 			if err != nil {
 				log.Print(err)
 				break
 			}
 		}
-	}(msp)
+	}()
+	go func() {
+		h := false
+		ht := false
+		d := rand.Float32()
+		//c := make([]byte, 6)
+		//c := bytes.Buffer{}
+		for {
+			if b.Len() > 0 {
+				if msp.dataRecvEncoding == "gbk" {
+					o := b.Bytes()[0]
+					if o < 0x80 { //单字节
+						d = rand.Float32()
+						str := string(b.Next(1))
+						//str = strings.Replace(str, "\x00", "", -1)
+						//mw.txtSerialRecv.SetSuspended(true)
+						mw.txtSerialRecv.AppendText(str)
+						//mw.txtSerialRecv.SetSuspended(false)
+					} else {
+						//cb = false
+						//c.WriteByte(o)
+						if b.Len() >= 2 {
+							h = false
+							ht = false
+							d = rand.Float32()
+							decoder := mahonia.NewDecoder(msp.dataRecvEncoding)
+							_, cdata, _ := decoder.Translate(b.Next(b.Len()/2*2), true)
+							str := string(cdata)
+							//str = strings.Replace(str, "\x00", "", -1)
+							//mw.txtSerialRecv.SetSuspended(true)
+							mw.txtSerialRecv.AppendText(str)
+							//mw.txtSerialRecv.SetSuspended(false)
+						} else {
+							if ht {
+								ht = false
+								str := string(b.Next(1))
+								str = strings.Replace(str, "\x00", "", -1)
+								//mw.txtSerialRecv.SetSuspended(true)
+								mw.txtSerialRecv.AppendText(str)
+							} else if !h {
+								h = true
+								dn := rand.Float32()
+								d = dn
+								go func(ds float32) {
+									time.Sleep(time.Millisecond * 50)
+									if ds == d {
+										ht = true
+									}
+								}(dn)
+							}
+						}
+					}
+					//else if o > 127 {
+					//	cb = true
+					//	c.WriteByte(o)
+					//}
+				} else if msp.dataRecvEncoding == "utf8" {
+					o := b.Bytes()[0]
+					hl := 0
+					if o < 0x80 { //单字节
+						hl = 0
+						d = rand.Float32()
+						str := string(b.Next(1))
+						str = strings.Replace(str, "\x00", "", -1)
+						//mw.txtSerialRecv.SetSuspended(true)
+						mw.txtSerialRecv.AppendText(str)
+						//mw.txtSerialRecv.SetSuspended(false)
+					} else if o < 0xC0 { //多字节补充
+						hl = 0
+						d = rand.Float32()
+						str := string(b.Next(1))
+						str = strings.Replace(str, "\x00", "", -1)
+						//mw.txtSerialRecv.SetSuspended(true)
+						mw.txtSerialRecv.AppendText(str)
+						//mw.txtSerialRecv.SetSuspended(false)
+					} else if o < 0xE0 { //双字节头
+						hl = 2
+					} else if o < 0xF0 { //三字节头
+						hl = 3
+					} else if o < 0xF8 { //四字节头
+						hl = 4
+					} else if o < 0xFC { //五字节头
+						hl = 5
+					} else if o < 0xFE { //六字节头
+						hl = 6
+					}
+					if hl > 0 {
+						if b.Len() >= hl {
+							h = false
+							ht = false
+							d = rand.Float32()
+							decoder := mahonia.NewDecoder(msp.dataRecvEncoding)
+							_, cdata, _ := decoder.Translate(b.Next(hl), true)
+							str := string(cdata)
+							//str = strings.Replace(str, "\x00", "", -1)
+							d = rand.Float32()
+							//mw.txtSerialRecv.SetSuspended(true)
+							mw.txtSerialRecv.AppendText(str)
+							//mw.txtSerialRecv.SetSuspended(false)
+						} else {
+							if ht {
+								ht = false
+								d = rand.Float32()
+								str := string(b.Next(1))
+								str = strings.Replace(str, "\x00", "", -1)
+								//mw.txtSerialRecv.SetSuspended(true)
+								mw.txtSerialRecv.AppendText(str)
+							} else if !h {
+								h = true
+								dn := rand.Float32()
+								d = dn
+								go func(ds float32) {
+									time.Sleep(time.Millisecond * 50)
+									if ds == d {
+										ht = true
+									}
+								}(dn)
+							}
+						}
+					}
+				}
+			} else {
+				time.Sleep(time.Microsecond)
+			}
+			//if n == 0 && !isHalf {
+			//	continue
+			//}
+			//if isHalf {
+			//	buf = append([]byte{half}, buf[:n]...)
+			//	n += 1
+			//	isHalf = false
+			//} else if n == 1 {
+			//	//} else if n%2 == 1 {
+			//	half = buf[:n][0]
+			//	isHalf = true
+			//	continue
+			//}
+			//// noinspection ALL0
+			//log.Print(buf[:n])
+			////str := string(buf[:n])
+			////log.Print(str)
+			//decoder := mahonia.NewDecoder(sp.dataEncoding)
+			//_, cdata, _ := decoder.Translate(buf[:n], true)
+			//str := string(cdata)
+			//log.Print(str)
+			//str = strings.Replace(str, "\x00", "", -1)
+			//mw.txtSerialRecv.SetSuspended(true)
+			//mw.txtSerialRecv.AppendText(str)
+			//mw.txtSerialRecv.SetSuspended(false)
+		}
+	}()
 	return nil
 }
 
@@ -169,15 +296,20 @@ type myWindow struct {
 	txtSerialState *walk.Label
 	txtSerialRecv  *walk.TextEdit
 	txtSerialSend  *walk.TextEdit
-	cbEncoding     *walk.ComboBox
+	cbRecvEncoding *walk.ComboBox
+	cbSendEncoding *walk.ComboBox
 }
 
 type mySerialPort struct {
 	*serial.Port
-	dataEncoding string
+	dataRecvEncoding string
+	dataSendEncoding string
 }
 
-var msp = mySerialPort{dataEncoding: "gbk"}
+var msp = mySerialPort{
+	dataRecvEncoding: "gbk",
+	dataSendEncoding: "gbk",
+}
 
 func main() {
 	mw := myWindow{}
@@ -370,11 +502,11 @@ func main() {
 										Text: "编码方式",
 									},
 									ComboBox{
-										AssignTo:     &mw.cbEncoding,
+										AssignTo:     &mw.cbRecvEncoding,
 										CurrentIndex: 0,
 										Model:        []string{"gbk", "utf8"},
 										OnCurrentIndexChanged: func() {
-											msp.dataEncoding = mw.cbEncoding.Value().(string)
+											msp.dataRecvEncoding = mw.cbRecvEncoding.Value().(string)
 										},
 									},
 								},
@@ -401,11 +533,11 @@ func main() {
 										Text: "编码方式",
 									},
 									ComboBox{
-										AssignTo:     &mw.cbEncoding,
+										AssignTo:     &mw.cbSendEncoding,
 										CurrentIndex: 0,
 										Model:        []string{"gbk", "utf8"},
 										OnCurrentIndexChanged: func() {
-											msp.dataEncoding = mw.cbEncoding.Value().(string)
+											msp.dataSendEncoding = mw.cbSendEncoding.Value().(string)
 										},
 									},
 								},
@@ -434,7 +566,7 @@ func main() {
 						TextColor:  walk.RGB(0, 255, 0),
 						//Enabled:    false,
 						//Font:     Font{Family: "Courier New", PointSize: 10},
-						Font:     Font{Family: "Consolas", PointSize: 10},
+						//Font:     Font{Family: "Consolas", PointSize: 10},
 						ReadOnly: true,
 						VScroll:  true,
 					},
@@ -447,6 +579,7 @@ func main() {
 								Name:     "txtSerialSend",
 								AssignTo: &mw.txtSerialSend,
 								Font:     Font{Family: "Consolas", PointSize: 10},
+								Text:     "我有一只小毛驴",
 							},
 							Composite{
 								Layout:  VBox{MarginsZero: true},
@@ -477,7 +610,7 @@ func main() {
 									PushButton{
 										Text: "发送",
 										OnClicked: func() {
-											encoder := mahonia.NewEncoder(msp.dataEncoding)
+											encoder := mahonia.NewEncoder(msp.dataSendEncoding)
 											result := encoder.ConvertString(mw.txtSerialSend.Text())
 											_, err := msp.Write([]byte(result))
 											if err != nil {
